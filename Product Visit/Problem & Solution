@@ -1,0 +1,95 @@
+Problem Statement : Find all users who visited the Listing page after visiting the Product page but before visiting the home page.
+Required order of Visit
+First : "Product"
+Then : "Listing"
+Finally : "Home"
+All this page must be visited in the strict order by a user.
+
+Sample Input :
+user_id | page_name |    visit_time    
+---------+-----------+------------------
+       1 | Product   | 01-06-2024 10:00
+       1 | Listing   | 01-06-2024 10:05
+       1 | Home      | 01-06-2024 10:10
+       2 | Listing   | 01-06-2024 09:00
+       2 | Product   | 01-06-2024 09:05
+       2 | Home      | 01-06-2024 09:10
+       3 | Product   | 01-06-2024 11:00
+       3 | Listing   | 01-06-2024 11:05
+       4 | Product   | 01-06-2024 08:00
+       4 | Home      | 01-06-2024 08:05
+       4 | Listing   | 01-06-2024 08:10
+       5 | Product   | 01-06-2024 12:00
+       5 | Listing   | 01-06-2024 12:10
+       5 | Product   | 01-06-2024 12:15
+       5 | Listing   | 01-06-2024 12:20
+       5 | Home      | 01-06-2024 12:25
+       6 | Home      | 01-06-2024 01:00
+       6 | Product   | 01-06-2024 01:05
+       6 | Listing   | 01-06-2024 01:15
+
+Sample Output :
+user_id 
+---------
+       1
+       5
+
+Solution Code :
+CREATE TABLE PAGE_VISIT
+  (
+    USER_ID INT,
+    PAGE_NAME VARCHAR(20),
+    VISIT_TIME DATETIME
+  );
+
+ INSERT INTO PAGE_VISIT VALUES(1,'Product','01-06-2024 10:00');
+ INSERT INTO PAGE_VISIT VALUES(1,'Listing','01-06-2024 10:05');
+ INSERT INTO PAGE_VISIT VALUES(1,'Home','01-06-2024 10:10');
+ INSERT INTO PAGE_VISIT VALUES(2,'Listing','01-06-2024 09:00');
+ INSERT INTO PAGE_VISIT VALUES(2,'Product','01-06-2024 09:05');
+ INSERT INTO PAGE_VISIT VALUES(2,'Home','01-06-2024 09:10');
+ INSERT INTO PAGE_VISIT VALUES(3,'Product','01-06-2024 11:00');
+ INSERT INTO PAGE_VISIT VALUES(3,'Listing','01-06-2024 11:05');
+ INSERT INTO PAGE_VISIT VALUES(4,'Product','01-06-2024 08:00');
+ INSERT INTO PAGE_VISIT VALUES(4,'Home','01-06-2024 08:05');
+ INSERT INTO PAGE_VISIT VALUES(4,'Listing','01-06-2024 08:10');
+ INSERT INTO PAGE_VISIT VALUES(5,'Product','01-06-2024 12:00');
+ INSERT INTO PAGE_VISIT VALUES(5,'Listing','01-06-2024 12:10');
+ INSERT INTO PAGE_VISIT VALUES(5,'Product','01-06-2024 12:15');
+ INSERT INTO PAGE_VISIT VALUES(5,'Listing','01-06-2024 12:20');
+ INSERT INTO PAGE_VISIT VALUES(5,'Home','01-06-2024 12:25');
+ INSERT INTO PAGE_VISIT VALUES(6,'Home','01-06-2024 01:00');
+ INSERT INTO PAGE_VISIT VALUES(6,'Product','01-06-2024 01:05');
+ INSERT INTO PAGE_VISIT VALUES(6,'Listing','01-06-2024 01:15');
+
+with cte_visit_timing as
+(
+select user_id,
+case when page_name='Product' then 1
+	 when page_name='Listing' then 2
+	 when page_name ='Home' then 3
+     end page_name_order,
+min(visit_time) as min_visit_time
+     from PAGE_VISIT
+     group by user_id,
+case when page_name='Product' then 1
+	 when page_name='Listing' then 2
+	 when page_name ='Home' then 3
+	 end
+),
+cte_valid_users as
+(
+select user_id,count(1)
+from 
+(
+select *,
+case when lead(min_visit_time,1,'01-01-2099 10:00') over(partition by user_id order by page_name_order) > min_visit_time then 1 
+else 0 end nxt
+from cte_visit_timing
+) a
+where nxt<>0
+group by user_id
+having count(user_id)=3
+)
+select user_id from cte_valid_users order by user_id
+
