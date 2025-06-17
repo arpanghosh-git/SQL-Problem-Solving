@@ -1,0 +1,60 @@
+Problem Statement : Write an SQL query to find the movie seats where at least 3 consecutive seats are occupied by Male viewers.
+
+Sample Input :
+seat_no | occupant_gender 
+---------+-----------------
+       1 | F
+       2 | M
+       3 | M
+       4 | F
+       5 | M
+       6 | M
+       7 | M
+       8 | F
+       9 | F
+      10 | M
+
+Sample Output :
+seat_no 
+---------
+       5
+       6
+       7 
+
+create table movie_seats
+(
+seat_no int,
+occupant_gender varchar(2)
+);
+
+insert into movie_seats values(1,'F');
+insert into movie_seats values(2,'M');
+insert into movie_seats values(3,'M');
+insert into movie_seats values(4,'F');
+insert into movie_seats values(5,'M');
+insert into movie_seats values(6,'M');
+insert into movie_seats values(7,'M');
+insert into movie_seats values(8,'F');
+insert into movie_seats values(9,'F');
+insert into movie_seats values(10,'M');
+
+Solution Code : 
+with cte_grouped_male_occupant as 
+(
+select *,
+seat_no-row_number() over(partition by occupant_gender order by seat_no) as seat_grp
+from movie_seats
+where occupant_gender='M'
+),
+cte_consecutive_seat_count as
+(
+select seat_grp,count(seat_no) as seat_no_cnt
+from cte_grouped_male_occupant
+group by seat_grp
+having count(seat_no)>=3
+)
+select o.seat_no
+from cte_grouped_male_occupant o
+inner join
+cte_consecutive_seat_count c
+on o.seat_grp=c.seat_grp
